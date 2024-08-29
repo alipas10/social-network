@@ -1,4 +1,4 @@
-package com.devteria.profile.entity;
+package com.profile.entity;
 
 import java.time.LocalDate;
 

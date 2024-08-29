@@ -1,22 +1,25 @@
 package com.gateway.configuration;
 
-import io.netty.resolver.DefaultAddressResolverGroup;
+import com.gateway.repository.IdentityClient;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.xml.Jaxb2XmlDecoder;
-import org.springframework.http.codec.xml.Jaxb2XmlEncoder;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
+import org.springframework.web.reactive.function.client.support.WebClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-@Component
+@Configuration
 public class WebClientConfiguration {
     @Bean
     public WebClient webClient (){
         return WebClient.builder()
-
                 .build();
     }
 
+    @Bean
+    IdentityClient identityClient(WebClient webClient){
+        HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory
+                .builderFor(WebClientAdapter.create(webClient)).build();
+
+        return httpServiceProxyFactory.createClient(IdentityClient.class);
+    }
 }

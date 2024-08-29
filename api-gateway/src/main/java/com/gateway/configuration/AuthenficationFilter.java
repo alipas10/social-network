@@ -1,12 +1,21 @@
 package com.gateway.configuration;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gateway.dto.response.ApiResponse;
+import com.gateway.service.IdentityService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -15,40 +24,40 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenficationFilter implements GlobalFilter, Ordered {
 
-    private final WebClient webClient;
+    IdentityService identityService;
+    ObjectMapper objectMapper;
 
-    public AuthenficationFilter(WebClient webClient) {
-        this.webClient = webClient;
-    }
+    private final String[] PUBLIC_URL = { "auth/token"};
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         System.out.print("enter authentication filter");
+
+       // if(PUBLIC_URL)
+
+
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
-            return reponseUnauthorization(exchange.getResponse());
+            return unauthenticated(exchange.getResponse());
+
         String jwt = authHeader.getFirst().replace("Bearer ", "");
+        log.info("Token: {}", jwt);
 
-        return webClient.get().uri("http://localhost:8080/auth/verifyt-token/{jwt}",jwt)
-                .retrieve().toBodilessEntity()
-
-                .flatMap( x -> {
-                    if(x.getStatusCode().is2xxSuccessful()) {
+        return identityService.introspect(jwt)
+                .flatMap( introspectResponse -> {
+                    if (introspectResponse.getResult().isValid())
                         return chain.filter(exchange);
-                    }
-                    else{
-                        System.out.println(x.getStatusCode());
-                        return reponseUnauthorization(exchange.getResponse());
-                    }
-                })
-                .onErrorResume(throwable -> reponseUnauthorization(exchange.getResponse()))
-                ;
+                    else
+                        return unauthenticated(exchange.getResponse());
+                }).onErrorResume(throwable -> unauthenticated(exchange.getResponse()));
+
 
     }
 
@@ -57,9 +66,23 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
         return -1;
     }
 
-    Mono<Void> reponseUnauthorization (ServerHttpResponse response){
+    Mono<Void> unauthenticated(ServerHttpResponse response){
+        ApiResponse<?> apiResponse = ApiResponse.builder()
+                .code(1401)
+                .message("Unauthenticated")
+                .build();
+
+        String body = null;
+        try {
+            body = objectMapper.writeValueAsString(apiResponse);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+
         return response.writeWith(
-                Mono.just(response.bufferFactory().wrap("Unauthenticated".getBytes())));
+                Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 }

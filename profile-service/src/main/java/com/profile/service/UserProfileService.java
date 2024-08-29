@@ -1,12 +1,12 @@
-package com.devteria.profile.service;
+package com.profile.service;
 
 import org.springframework.stereotype.Service;
 
-import com.devteria.profile.dto.request.ProfileCreationRequest;
-import com.devteria.profile.dto.response.UserProfileReponse;
-import com.devteria.profile.entity.UserProfile;
-import com.devteria.profile.mapper.UserProfileMapper;
-import com.devteria.profile.repository.UserProfileRepository;
+import com.profile.dto.request.ProfileCreationRequest;
+import com.profile.dto.response.UserProfileReponse;
+import com.profile.entity.UserProfile;
+import com.profile.mapper.UserProfileMapper;
+import com.profile.repository.UserProfileRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
