@@ -1,11 +1,11 @@
 package com.identity.exception;
 
-import lombok.AccessLevel;
-import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.experimental.FieldDefaults;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -27,7 +27,7 @@ public enum ErrorCode {
         this.statusCode = statusCode;
     }
 
-      int code;
-      String message;
-      HttpStatusCode statusCode;
+    int code;
+    String message;
+    HttpStatusCode statusCode;
 }

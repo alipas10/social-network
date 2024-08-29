@@ -4,10 +4,6 @@ import java.text.ParseException;
 import java.util.Objects;
 import javax.crypto.spec.SecretKeySpec;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -20,6 +16,11 @@ import com.identity.dto.request.IntrospectRequest;
 import com.identity.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 @Component
@@ -31,7 +32,7 @@ public class CustomJwtDecoder implements JwtDecoder {
     AuthenticationService authenticationService;
 
     @NonFinal
-     NimbusJwtDecoder nimbusJwtDecoder = null;
+    NimbusJwtDecoder nimbusJwtDecoder = null;
 
     @Override
     public Jwt decode(String token) throws JwtException {
