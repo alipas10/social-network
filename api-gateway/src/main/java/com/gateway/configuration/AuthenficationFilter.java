@@ -16,6 +16,7 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -23,6 +24,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -34,13 +36,22 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
     IdentityService identityService;
     ObjectMapper objectMapper;
 
-    private final String[] PUBLIC_URL = { "auth/token"};
+    @NonFinal
+    String[] PUBLIC_ENDPOINT = {
+            "/identity/auth/.*",
+            "/identity/users/registration"
+    };
+
+    @Value("${app.api-prefix}")
+    @NonFinal
+    private String apiPrefix;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         System.out.print("enter authentication filter");
 
-       // if(PUBLIC_URL)
+        if (isPublicEndpoint(exchange.getRequest()))
+            return chain.filter(exchange);
 
 
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
@@ -84,5 +95,10 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
 
         return response.writeWith(
                 Mono.just(response.bufferFactory().wrap(body.getBytes())));
+    }
+
+    private boolean isPublicEndpoint(ServerHttpRequest request){
+        return Arrays.stream(PUBLIC_ENDPOINT)
+                .anyMatch(s -> request.getURI().getPath().matches(apiPrefix + s));
     }
 }
