@@ -1,13 +1,5 @@
 package com.profile.exception;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.FieldDefaults;
-
-@Getter
-@Setter
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AppException extends RuntimeException {
 
     public AppException(ErrorCode errorCode) {
@@ -15,5 +7,13 @@ public class AppException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    ErrorCode errorCode;
+    private ErrorCode errorCode;
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(ErrorCode errorCode) {
+        this.errorCode = errorCode;
+    }
 }
