@@ -39,7 +39,9 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
     @NonFinal
     String[] PUBLIC_ENDPOINT = {
             "/identity/auth/.*",
-            "/identity/users/registration"
+            "/identity/users/registration",
+            "/profile/users",
+            "/profile/users/.*"
     };
 
     @Value("${app.api-prefix}")
@@ -49,10 +51,8 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         System.out.print("enter authentication filter");
-
         if (isPublicEndpoint(exchange.getRequest()))
             return chain.filter(exchange);
-
 
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
