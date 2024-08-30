@@ -1,5 +1,6 @@
 package com.profile.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.profile.dto.request.ProfileCreationRequest;
@@ -28,6 +29,7 @@ public class UserProfileService {
         return userProfileMapper.toUserProfileReponse(userProfile);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserProfileReponse getProfile(String id) {
         UserProfile userProfile =
                 userProfileRepository.findById(id).orElseThrow(() -> new RuntimeException("Profile not found"));
