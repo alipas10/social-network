@@ -41,7 +41,8 @@ public class AuthenficationFilter implements GlobalFilter, Ordered {
             "/identity/auth/.*",
             "/identity/users/registration",
             "/profile/users",
-            "/profile/users/.*"
+            "/profile/users/.*",
+            "/notification/email/send"
     };
 
     @Value("${app.api-prefix}")

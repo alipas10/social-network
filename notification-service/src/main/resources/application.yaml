@@ -1,0 +1,13 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /notification
+  application:
+    name: notification-service
+  data:
+    mongodb:
+      uri: mongodb://root:root@localhost:27017/notification-service?authSource=admin
+
+email:
+  public-key: 82d37a91a6b4e12aea77185b0fc51b4b
+  secret-key: 0aafc464b4ecfa3e9545ebb48c182309
