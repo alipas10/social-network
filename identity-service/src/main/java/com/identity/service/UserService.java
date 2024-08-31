@@ -3,9 +3,13 @@ package com.identity.service;
 import java.util.HashSet;
 import java.util.List;
 
+import com.identity.dto.request.ProfileCreationRequest;
+import com.identity.dto.response.UserProfileResponse;
+import com.event.NotificationEvent;
 import com.identity.mapper.ProfileMapper;
 import com.identity.repository.httpclient.ProfileClient;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,6 +45,7 @@ public class UserService {
     ProfileClient profileClient;
     ProfileMapper profileMapper;
 
+    KafkaTemplate<String,Object> kafkaTemplate;
 
     public UserResponse createUser(UserCreationRequest request) {
         User user = userMapper.toUser(request);
@@ -57,12 +62,24 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        var profileRequest = profileMapper.toProfileCreationRequest(request);
+        ProfileCreationRequest profileRequest = profileMapper.toProfileCreationRequest(request);
         profileRequest.setUserId(user.getId());
 
-        profileClient.createProfile(profileRequest);
+        UserProfileResponse profile = profileClient.createProfile(profileRequest);
 
-        return userMapper.toUserResponse(user);
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(request.getEmail())
+                .subject("Welcome to social network")
+                .body("Hello, " + request.getUsername())
+                .build();
+
+        log.info("Before send notification {}",notificationEvent.toString());
+        kafkaTemplate.send("notification-delivery", notificationEvent);
+
+        UserResponse userCreationReponse = userMapper.toUserResponse(user);
+        userCreationReponse.setId(profile.getId());
+        return userCreationReponse;
     }
 
     public UserResponse getMyInfo() {
