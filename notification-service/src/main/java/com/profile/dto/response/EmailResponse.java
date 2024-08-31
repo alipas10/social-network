@@ -1,5 +1,6 @@
 package com.profile.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,5 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmailResponse {
-    List<MessagesEmailResponse> Messages;
+    @JsonProperty(value = "Messages" )
+    List<MessagesEmailResponse> messages;
 }

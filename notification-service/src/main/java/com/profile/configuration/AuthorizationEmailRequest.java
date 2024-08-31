@@ -11,7 +11,7 @@ import org.springframework.http.HttpHeaders;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AuthorizationEmailRequest implements RequestInterceptor, ResponseInterceptor {
+public class AuthorizationEmailRequest implements RequestInterceptor {
     @Value( "${email.public-key}")
     String USER_NAME ;
 
@@ -26,19 +26,4 @@ public class AuthorizationEmailRequest implements RequestInterceptor, ResponseIn
 
     }
 
-    @Override
-    public Object intercept(InvocationContext invocationContext, Chain chain) throws Exception {
-        return null;
-    }
-
-    @Override
-    public ResponseInterceptor andThen(ResponseInterceptor nextInterceptor) {
-
-        return ResponseInterceptor.super.andThen(nextInterceptor);
-    }
-
-    @Override
-    public Chain apply(Chain chain) {
-        return ResponseInterceptor.super.apply(chain);
-    }
 }
