@@ -1,6 +1,7 @@
 package com.post.service;
 
 import com.post.dto.request.PostRequest;
+import com.post.dto.response.PageResponse;
 import com.post.dto.response.PostResponse;
 import com.post.entity.Post;
 import com.post.exception.AppException;
@@ -11,13 +12,16 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -55,6 +59,32 @@ public class PostService {
                 .map(postMapper::toPostResponse)
                 .collectList()
                 ;
+    }
+
+    public Mono<PageResponse> getMyPosts(int page, int size, String fieldSort, String with){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+        Sort sort = with.equals("desc") ? Sort.by(fieldSort).descending():
+                    Sort.by(fieldSort).ascending();
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
+
+        return postRepository.findAllByUserId(userId, pageable)
+                .collectList()
+                .zipWith(postRepository.countByUserId(userId))
+                .map(p -> {
+                 return  new PageImpl<>(p.getT1(),pageable, p.getT2());
+                })
+                .map(p -> {return PageResponse.builder()
+                        .currentPage(page)
+                        .pageSize(p.getSize())
+                        .totalElements(p.getTotalElements())
+                        .totalPages(p.getTotalPages())
+                        .data(p.getContent().stream().map(postMapper::toPostResponse).toList())
+                .build();})
+                .doOnError(throwable -> {
+                    log.info(throwable.getMessage());
+                    throw new AppException(ErrorCode.CANNOT_SAVE_GET_ALL_POST);
+                });
     }
 
 }
