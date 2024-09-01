@@ -16,12 +16,10 @@ import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
@@ -29,6 +27,7 @@ import java.util.Objects;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PostService {
 
+    DateTimeFormatter dateTimeFormatter;
     PostMapper postMapper;
     PostRepository postRepository;
 
@@ -41,7 +40,6 @@ public class PostService {
                 .createdDate(Instant.now())
                 .modifiedDate(Instant.now())
                 .build();
-
 
         return postRepository.insert(post)
                 .map(postMapper::toPostResponse)
@@ -79,7 +77,12 @@ public class PostService {
                         .pageSize(p.getSize())
                         .totalElements(p.getTotalElements())
                         .totalPages(p.getTotalPages())
-                        .data(p.getContent().stream().map(postMapper::toPostResponse).toList())
+                        .data(p.getContent().stream()
+                                .map( ps ->{
+                                    var temp = postMapper.toPostResponse(ps);
+                                    temp.setCreated(dateTimeFormatter.format(ps.getCreatedDate()));
+                                    return temp;
+                                        }).toList())
                 .build();})
                 .doOnError(throwable -> {
                     log.info(throwable.getMessage());
