@@ -1,6 +1,7 @@
 package com.profile.dto.response;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -16,4 +17,5 @@ public class UserProfileResponse {
     String lastName;
     LocalDate dob;
     String city;
+    List<UserProfileResponse> listInvitation;
 }

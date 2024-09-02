@@ -1,12 +1,15 @@
 package com.profile.service;
 
+import com.event.NotificationEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.dto.response.PageResponse;
 import com.profile.exception.AppException;
 import com.profile.exception.ErrorCode;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.KafkaException;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,9 +24,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,8 @@ import java.util.List;
 public class UserProfileService {
     UserProfileRepository userProfileRepository;
     UserProfileMapper userProfileMapper;
+    ObjectMapper objectmapper;
+    KafkaTemplate<String,Object> kafkaTemplate;
 
     public UserProfileResponse createProfile(ProfileCreationRequest request) {
         UserProfile userProfile = userProfileMapper.toUserProfile(request);
@@ -75,5 +79,50 @@ public class UserProfileService {
                 .data(profiles.getContent().stream()
                         .map(userProfileMapper::toUserProfileReponse).toList())
                 .build();
+    }
+
+
+    public UserProfileResponse sendInvitation(String idTarget) {
+        UserProfile userTarget = userProfileRepository.findByUserId(idTarget)
+                .orElseThrow( () -> {
+                            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+                });
+        var userId = SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        UserProfile currentUser = userProfileRepository.findByUserId(userId)
+                .orElseThrow( () -> {
+                   return new AppException(ErrorCode.USER_NOT_EXISTED);
+                });
+
+        var checkListInvition  = currentUser.getListFriendInvitation().stream()
+                        .anyMatch(invUser -> {
+                            return invUser.getUserId().equals(userTarget.getUserId());
+                        });
+
+        if(!checkListInvition){
+            NotificationEvent notificationEvent = NotificationEvent.builder()
+                    .channel("FCM")
+                    .recipient(userTarget.getUserId())
+                    .subject(currentUser.getFirstName() + currentUser.getLastName() +
+                            " send friend invitation to you ")
+                    .param(objectmapper.convertValue(currentUser, Map.class))
+                    .build();
+            log.info("Before send notification {}",notificationEvent.toString());
+            try{
+                kafkaTemplate.send("notification-invitation", notificationEvent);
+            } catch (KafkaException e ){
+                log.error("Dont send notification to Id: {}",userTarget.getUserId() );
+                throw new AppException( ErrorCode.UNCATEGORIZED_EXCEPTION);
+            }
+
+            var listInvitation = currentUser.getListFriendInvitation();
+            listInvitation. add(userTarget);
+            currentUser.setListFriendInvitation(listInvitation);
+
+            return  userProfileMapper.toUserProfileReponse(
+                    userProfileRepository.save(currentUser));
+        }else
+            throw new AppException(ErrorCode.USER_INVITED);
+
     }
 }

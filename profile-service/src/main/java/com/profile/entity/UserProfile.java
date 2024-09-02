@@ -1,11 +1,9 @@
 package com.profile.entity;
 
 import java.time.LocalDate;
+import java.util.List;
 
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
-import org.springframework.data.neo4j.core.schema.Id;
-import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Property;
+import org.springframework.data.neo4j.core.schema.*;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 import lombok.*;
@@ -18,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Node("user_profile")
+@ToString
 public class UserProfile {
     @Id
     @GeneratedValue(generatorClass = UUIDStringGenerator.class)
@@ -31,4 +30,7 @@ public class UserProfile {
     LocalDate dob;
     String city;
     Boolean allowedFind;
+
+    @Relationship(type = "ADD_FRIEND_PENDING", direction = Relationship.Direction.INCOMING)
+    List<UserProfile> listFriendInvitation;
 }
