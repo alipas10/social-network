@@ -1,6 +1,9 @@
 package com.profile.service;
 
+import com.profile.exception.AppException;
+import com.profile.exception.ErrorCode;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.profile.dto.request.ProfileCreationRequest;
@@ -32,10 +35,21 @@ public class UserProfileService {
     }
 
     public UserProfileResponse getProfile(String id) {
-        UserProfile userProfile =
-                userProfileRepository.findById(id).orElseThrow(() -> new RuntimeException("Profile not found"));
-
-        return userProfileMapper.toUserProfileReponse(userProfile);
+         var user = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+         return user.stream().filter(authority -> {
+             return authority.getAuthority().equals("ROLE_ADMIN");
+         }).findFirst()
+                 .map(es -> {
+            return  userProfileRepository.findById(id)
+                    .map(userProfileMapper::toUserProfileReponse)
+                    .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                 })
+                 .orElseGet( () -> {
+                     log.info("another role");
+                     return userProfileRepository.findByIdAndAllowedFindIsTrue(id)
+                             .map(userProfileMapper::toUserProfileReponse)
+                             .orElse(null);
+                 });
     }
 
     @PreAuthorize("hasRole('ADMIN')")
