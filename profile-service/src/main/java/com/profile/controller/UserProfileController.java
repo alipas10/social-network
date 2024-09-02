@@ -1,6 +1,7 @@
 package com.profile.controller;
 
 import com.profile.dto.response.ApiResponse;
+import com.profile.dto.response.PageResponse;
 import com.profile.dto.response.UserProfileResponse;
 import com.profile.service.UserProfileService;
 
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,9 +29,14 @@ public class UserProfileController {
     }
 
     @GetMapping("/users")
-    ApiResponse<List<UserProfileResponse>> getAllProfiles() {
-        return ApiResponse.<List<UserProfileResponse>>builder()
-                .result(userProfileService.getAllProfiles())
+    ApiResponse<PageResponse<UserProfileResponse>> getAllProfiles(
+            @RequestParam(value = "page", required = false, defaultValue = "1") Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") Integer size,
+            @RequestParam(value = "by", required = false, defaultValue = "dob") String sortBy,
+            @RequestParam(value = "type", required = false, defaultValue = "desc") String sortType
+    ) {
+        return ApiResponse.<PageResponse<UserProfileResponse>>builder()
+                .result(userProfileService.getAllProfiles(page, size, sortBy, sortType))
                 .build();
     }
 }

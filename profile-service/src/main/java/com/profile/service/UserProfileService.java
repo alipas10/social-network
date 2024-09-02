@@ -1,7 +1,12 @@
 package com.profile.service;
 
+import com.profile.dto.response.PageResponse;
 import com.profile.exception.AppException;
 import com.profile.exception.ErrorCode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -16,6 +21,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -53,9 +59,21 @@ public class UserProfileService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserProfileResponse> getAllProfiles() {
-        var profiles = userProfileRepository.findAll();
+    public PageResponse<UserProfileResponse> getAllProfiles(
+            Integer page, Integer size, String sortBy, String sortType
+    ) {
+        Sort sort ="desc".equals(sortType) ? Sort.by(sortBy).descending():
+                Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page -1, size, sort);
+        var profiles = userProfileRepository.findAll(pageable);
 
-        return profiles.stream().map(userProfileMapper::toUserProfileReponse).toList();
+        return PageResponse.<UserProfileResponse>builder()
+                .currentPage(page)
+                .pageSize(profiles.getSize())
+                .totalElements(profiles.getTotalElements())
+                .totalPages(profiles.getTotalPages())
+                .data(profiles.getContent().stream()
+                        .map(userProfileMapper::toUserProfileReponse).toList())
+                .build();
     }
 }
