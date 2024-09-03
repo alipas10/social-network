@@ -1,5 +1,6 @@
 package com.identity.entity;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 import jakarta.persistence.*;
@@ -26,4 +27,9 @@ public class User {
 
     @ManyToMany
     Set<Role> roles;
+
+    String firstName;
+    String lastName;
+    String email;
+    LocalDate dob;
 }

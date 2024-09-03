@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.profile.dto.response.PageResponse;
 import com.profile.exception.AppException;
 import com.profile.exception.ErrorCode;
+import org.apache.catalina.User;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -52,13 +53,14 @@ public class UserProfileService {
              return authority.getAuthority().equals("ROLE_ADMIN");
          }).findFirst()
                  .map(es -> {
-            return  userProfileRepository.findById(id)
-                    .map(userProfileMapper::toUserProfileReponse)
-                    .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                     log.info("This is getProfile method role ADMIN");
+                     return  userProfileRepository.findByUserId(id)
+                        .map(userProfileMapper::toUserProfileReponse)
+                        .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_EXISTED));
                  })
                  .orElseGet( () -> {
                      log.info("another role");
-                     return userProfileRepository.findByIdAndAllowedFindIsTrue(id)
+                     return userProfileRepository.findByUserIdAndAllowedFindIsTrue(id)
                              .map(userProfileMapper::toUserProfileReponse)
                              .orElse(null);
                  });
@@ -86,20 +88,19 @@ public class UserProfileService {
 
     public UserProfileResponse sendInvitation(String idTarget) {
         UserProfile userTarget = userProfileRepository.findByUserId(idTarget)
-                .orElseThrow( () -> {
-                            throw new AppException(ErrorCode.USER_NOT_EXISTED);
-                });
-        var userId = SecurityContextHolder.getContext().getAuthentication()
-                .getName();
-        UserProfile currentUser = userProfileRepository.findByUserId(userId)
-                .orElseThrow( () -> {
-                   return new AppException(ErrorCode.USER_NOT_EXISTED);
-                });
+                .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        var checkListInvition  = currentUser.getListFriendInvitation().stream()
-                        .anyMatch(invUser -> {
-                            return invUser.getUserId().equals(userTarget.getUserId());
-                        });
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserProfile currentUser = userProfileRepository.findByUserId(userId)
+                .orElseThrow( () ->  new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        var lstInvitationCurrentUser = currentUser.getListFriendInvitation();
+        Predicate<UserProfile> checkExistUser = invUser -> {
+            return invUser.getUserId().equals(userTarget.getUserId());
+        };
+
+        boolean checkListInvition  = lstInvitationCurrentUser.stream()
+                        .anyMatch(checkExistUser);
 
         if(!checkListInvition){
             NotificationEvent notificationEvent = NotificationEvent.builder()
@@ -117,14 +118,24 @@ public class UserProfileService {
                 throw new AppException( ErrorCode.UNCATEGORIZED_EXCEPTION);
             }
 
-            var listInvitation = currentUser.getListFriendInvitation();
-            listInvitation. add(userTarget);
-            currentUser.setListFriendInvitation(listInvitation);
+            var listInvitation = userTarget.getListFriendInvitation();
+            listInvitation.add(currentUser);
+            userTarget.setListFriendInvitation(listInvitation);
 
             return  userProfileMapper.toUserProfileReponse(
+                    userProfileRepository.save(userTarget));
+        }else {
+            log.info("target user have already sended invitation ");
+            Set<UserProfile> lstFriend = currentUser.getFriends();
+            lstFriend.add(userTarget);
+            currentUser.setFriends(lstFriend);
+
+            lstInvitationCurrentUser.removeIf(checkExistUser);
+            currentUser.setListFriendInvitation(lstInvitationCurrentUser);
+
+            return userProfileMapper.toUserProfileReponse(
                     userProfileRepository.save(currentUser));
-        }else
-            throw new AppException(ErrorCode.USER_INVITED);
+        }
 
     }
 
