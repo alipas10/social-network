@@ -12,5 +12,6 @@ public interface UserProfileMapper {
     UserProfile toUserProfile(ProfileCreationRequest request);
 
     @Mapping(target = "listInvitation", source = "listFriendInvitation")
+    @Mapping(target = "friends", source = "friends")
     UserProfileResponse toUserProfileReponse(UserProfile entity);
 }

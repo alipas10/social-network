@@ -44,4 +44,11 @@ public class UserProfileController {
                 .result(userProfileService.sendInvitation(idTarget))
                 .build();
     }
+
+    @GetMapping("/accept-invitation/{idTarget}")
+    ApiResponse<UserProfileResponse> acceptInvitation(@PathVariable String idTarget) {
+        return ApiResponse.<UserProfileResponse>builder()
+                .result(userProfileService.acceptInvitation(idTarget))
+                .build();
+    }
 }

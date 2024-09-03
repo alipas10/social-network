@@ -2,6 +2,7 @@ package com.profile.entity;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.neo4j.core.schema.*;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
@@ -32,5 +33,8 @@ public class UserProfile {
     Boolean allowedFind;
 
     @Relationship(type = "ADD_FRIEND_PENDING", direction = Relationship.Direction.INCOMING)
-    List<UserProfile> listFriendInvitation;
+    Set<UserProfile> listFriendInvitation;
+
+    @Relationship(type = "FRIEND_WITH")
+    Set<UserProfile> friends;
 }

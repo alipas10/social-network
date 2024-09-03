@@ -26,6 +26,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 @Service
 @RequiredArgsConstructor
@@ -124,5 +126,40 @@ public class UserProfileService {
         }else
             throw new AppException(ErrorCode.USER_INVITED);
 
+    }
+
+    public UserProfileResponse acceptInvitation(String idTarget) {
+        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserProfile currentUser = userProfileRepository.findByUserId(currentUserId)
+                .orElseThrow( () -> {
+                    throw new AppException(ErrorCode.USER_NOT_EXISTED);
+                });
+        Set<UserProfile> lstInvitation = currentUser.getListFriendInvitation();
+
+        Predicate<UserProfile> checkExistUser = user -> {
+            return user.getUserId().endsWith(idTarget);
+        };
+
+        UserProfile targetUser  = lstInvitation
+                .stream().filter(checkExistUser)
+                    .findFirst()
+                .orElseThrow( () -> {throw new AppException(ErrorCode.USER_NOT_EXISTED) ;});
+
+
+        boolean alreadyFriend = currentUser.getFriends()
+                .stream().anyMatch(checkExistUser);
+        if (!alreadyFriend) {
+            log.info("not yet friend");
+            Set<UserProfile> lstFriend = currentUser.getFriends();
+            lstFriend.add(targetUser);
+            currentUser.setFriends(lstFriend);
+
+            lstInvitation.removeIf(checkExistUser);
+            currentUser.setListFriendInvitation(lstInvitation);
+
+            return userProfileMapper.toUserProfileReponse(
+                    userProfileRepository.save(currentUser));
+        }
+        return userProfileMapper.toUserProfileReponse(currentUser);
     }
 }
