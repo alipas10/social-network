@@ -1,0 +1,27 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /post
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:root@localhost:27017/post-service?authSource=admin
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  endpoints:
+    web.exposure:
+      include: health, info, metrics, prometheus
+  observations:
+    key-values:
+      application: post-service
+logging:
+  pattern:
+    correlation: '[${spring.application.name:},%X{traceId:-},%X{spanId:-}]'

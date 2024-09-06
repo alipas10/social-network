@@ -27,3 +27,4 @@ replay_pid*
 .DS_Store
 /target
 /identity-service/target
+/docker/tempo/tempo-data
